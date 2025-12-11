@@ -1,0 +1,63 @@
+# Ejemplo de configuración para GSCN 7880 (3548.64 MHz)
+# Banda n78 - 5G NR FR1
+
+# === CONFIGURACIÓN DE DISPOSITIVO ===
+device:
+  index: null
+  serial: null
+  args: ""
+
+# === CONFIGURACIÓN RF ===
+rf:
+  # GSCN 7880 = 3548.64 MHz
+  gscn: 7880
+  
+  # Tasa de muestreo ajustada
+  sample_rate: 23040000  # 23.04 MHz
+  
+  # Ganancia reducida para señal fuerte
+  gain: 40
+  
+  # SCS = 30 kHz (típico para banda n78)
+  scs: 30
+  
+  antenna: "RX2"
+
+# === PARÁMETROS DE PROCESADO 5G NR ===
+processing:
+  nrb_ssb: 20
+  nrb_demod: 45
+  n_symbols_display: 10  # Mostrar solo 10 símbolos (más compacto)
+  search_bw: 90
+  detection_threshold: 1e-3
+
+# === PARÁMETROS DE MONITOREO ===
+monitoring:
+  # Monitoreo más largo
+  monitor_time: 1.0
+  
+  # Capturas más frecuentes
+  interval: 0.1
+  
+  frames_per_capture: 1
+  save_captures: false
+  captures_dir: "capturas_7880"
+
+# === VISUALIZACIÓN ===
+visualization:
+  enable_gui: true
+  figure_size: [14, 9]
+  colormap: "viridis"
+  interpolation: "nearest"
+  verbose: true  # Mostrar detalles de detección
+
+# === MODO SIMULACIÓN ===
+simulation:
+  enabled: false
+
+# === EXPORTACIÓN DE DATOS ===
+export:
+  save_mat: false
+  output_dir: "resultados_7880"
+  save_plots: false
+  use_timestamp: true

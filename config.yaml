@@ -1,0 +1,139 @@
+# Configuración para Monitoreo Continuo 5G NR
+# Equivalente a los parámetros del script MATLAB MonitoreoContinuoFunciones.m
+
+# === CONFIGURACIÓN DE DISPOSITIVO ===
+device:
+  # Índice del dispositivo USRP (0, 1, 2, ...)
+  # Si no se especifica, se seleccionará automáticamente
+  index: null
+  
+  # Número de serie del dispositivo USRP
+  # Ejemplo: "32345E1"
+  serial: null
+  
+  # Argumentos adicionales del dispositivo
+  # Ejemplo: "master_clock_rate=30e6"
+  args: ""
+
+# === CONFIGURACIÓN RF ===
+rf:
+  # GSCN (Global Synchronization Channel Number)
+  # Para banda n78: típicamente 7499-8255
+  # GSCN 7929 = 3619.2 MHz
+  gscn: 7929
+  
+  # Tasa de muestreo en Hz
+  # Valores típicos: 15.36e6, 19.5e6, 23.04e6, 30.72e6
+  sample_rate: 19500000
+  
+  # Ganancia del receptor en dB
+  # Rango típico: 0-76 dB para USRP B210
+  # Ajustar según nivel de señal recibida
+  gain: 50
+  
+  # Subcarrier spacing en kHz
+  # Valores válidos: 15, 30, 60, 120, 240
+  # Para banda n78: típicamente 30 kHz
+  scs: 30
+  
+  # Antena a utilizar
+  # Opciones: "RX2" (default), "TX/RX"
+  antenna: "RX2"
+
+# === PARÁMETROS DE PROCESADO 5G NR ===
+processing:
+  # Número de Resource Blocks para SSB
+  # Estándar 5G NR: siempre 20 RBs
+  nrb_ssb: 20
+  
+  # Número de Resource Blocks para demodulación completa
+  # Ajustar según ancho de banda de la señal
+  nrb_demod: 45
+  
+  # Número de símbolos OFDM a demodular y mostrar
+  # Mínimo 6 para incluir SSB (símbolos 2-5)
+  # Máximo 14 (slot completo en 5G NR)
+  n_symbols_display: 14
+  
+  # Ancho de banda de búsqueda de frecuencia en kHz
+  # Para corrección de offset de frecuencia
+  search_bw: 90
+  
+  # Umbral de detección de SSB
+  # Correlación mínima para considerar SSB detectado
+  detection_threshold: 1e-3
+
+# === PARÁMETROS DE MONITOREO ===
+monitoring:
+  # Tiempo total de monitoreo en segundos
+  # En MATLAB: monitorTime = 0.57
+  monitor_time: 0.57
+  
+  # Intervalo entre capturas en segundos
+  # En MATLAB: interval = 0.057
+  interval: 0.057
+  
+  # Número de frames 5G NR por captura
+  # 1 frame = 10 ms
+  frames_per_capture: 1
+  
+  # Guardar capturas en disco
+  save_captures: false
+  
+  # Directorio para guardar capturas
+  captures_dir: "capturas_disco"
+
+# === VISUALIZACIÓN ===
+visualization:
+  # Mostrar interfaz gráfica
+  enable_gui: true
+  
+  # Tamaño de figura (ancho, alto) en pulgadas
+  figure_size: [12, 8]
+  
+  # Mapa de colores para resource grid
+  # Opciones: jet, viridis, plasma, inferno, magma, hot, cool
+  colormap: "jet"
+  
+  # Interpolación de imagen
+  # Opciones: nearest, bilinear, bicubic, none
+  interpolation: "nearest"
+  
+  # Mostrar información detallada en consola
+  verbose: false
+
+# === MODO SIMULACIÓN ===
+simulation:
+  # Activar modo simulación (sin hardware)
+  enabled: false
+  
+  # Nivel de ruido en simulación (dB)
+  noise_level: -10
+  
+  # Generar SSB sintético
+  generate_ssb: false
+
+# === LOGGING ===
+logging:
+  # Nivel de log: DEBUG, INFO, WARNING, ERROR
+  level: "INFO"
+  
+  # Guardar logs en archivo
+  save_to_file: false
+  
+  # Archivo de log
+  log_file: "monitoreo.log"
+
+# === EXPORTACIÓN DE DATOS ===
+export:
+  # Guardar resource grids en formato .mat (MATLAB)
+  save_mat: false
+  
+  # Directorio de exportación
+  output_dir: "resultados"
+  
+  # Guardar gráficas como imágenes PNG
+  save_plots: false
+  
+  # Incluir timestamp en nombres de archivo
+  use_timestamp: true

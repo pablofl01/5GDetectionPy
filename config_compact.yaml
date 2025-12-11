@@ -1,0 +1,43 @@
+# Configuración compacta - Mostrar solo SSB y margen mínimo
+# Ideal para procesado rápido o recursos limitados
+
+device:
+  index: null
+  serial: null
+  args: ""
+
+rf:
+  gscn: 7929
+  sample_rate: 19500000
+  gain: 50
+  scs: 30
+  antenna: "RX2"
+
+processing:
+  nrb_ssb: 20
+  nrb_demod: 45
+  n_symbols_display: 6  # Mínimo: solo SSB visible (símbolos 2-5)
+  search_bw: 90
+  detection_threshold: 1e-3
+
+monitoring:
+  monitor_time: 0.57
+  interval: 0.057
+  frames_per_capture: 1
+  save_captures: false
+
+visualization:
+  enable_gui: true
+  figure_size: [12, 6]  # Más estrecho para 6 símbolos
+  colormap: "jet"
+  interpolation: "nearest"
+  verbose: false
+
+simulation:
+  enabled: false
+
+export:
+  save_mat: false
+  output_dir: "resultados"
+  save_plots: false
+  use_timestamp: true

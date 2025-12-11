@@ -1,0 +1,10 @@
+numpy>=1.24.0,<2.0  # UHD requiere NumPy 1.x
+scipy>=1.7.0
+matplotlib>=3.4.0
+pyyaml>=5.4.0
+
+# NOTA: uhd no está disponible en PyPI
+# Instalación en Ubuntu/Debian:
+#   sudo apt install python3-uhd uhd-host libuhd-dev
+# Luego crear enlace simbólico al entorno virtual:
+#   ln -s /usr/lib/python3/dist-packages/uhd env/lib/python3.12/site-packages/uhd
