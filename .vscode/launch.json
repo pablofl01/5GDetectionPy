@@ -1,0 +1,57 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Monitoreo 5G (Simulación)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/monitoreo_continuo.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--simulate",
+                "--verbose",
+                "--no-gui"
+            ],
+            "python": "${workspaceFolder}/env/bin/python",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        {
+            "name": "Debug Monitoreo 5G (Hardware)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/monitoreo_continuo.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--device-serial", "3273A5C",
+                "--verbose",
+                "--no-gui"
+            ],
+            "python": "${workspaceFolder}/env/bin/python",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+                "UHD_IMAGES_DIR": "/usr/local/share/uhd/images"
+            }
+        },
+        {
+            "name": "Debug Monitoreo 5G (Hardware + GUI)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/monitoreo_continuo.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--device-serial", "3273A5C",
+                "--verbose"
+            ],
+            "python": "${workspaceFolder}/env/bin/python",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+                "UHD_IMAGES_DIR": "/usr/local/share/uhd/images"
+            }
+        }
+    ]
+}
