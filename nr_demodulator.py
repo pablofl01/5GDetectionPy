@@ -153,8 +153,17 @@ def demodulate_ssb(waveform: np.ndarray,
         SampleRate=sample_rate
     )
     
-    max_symbols = min(54, grid_full.shape[1])
-    grid_display = grid_full[:, :max_symbols]
+    # Rellenar con ceros para tener siempre 54 símbolos (escala consistente)
+    n_subcarriers = grid_full.shape[0]
+    n_symbols_available = grid_full.shape[1]
+    target_symbols = 54
+    
+    if n_symbols_available < target_symbols:
+        # Rellenar con ceros hasta completar 54 símbolos
+        grid_display = np.zeros((n_subcarriers, target_symbols), dtype=grid_full.dtype)
+        grid_display[:, :n_symbols_available] = grid_full
+    else:
+        grid_display = grid_full[:, :target_symbols]
     
     return {
         'cell_id': cell_id,
