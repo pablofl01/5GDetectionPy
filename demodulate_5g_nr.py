@@ -470,16 +470,31 @@ def demodulate_single(mat_file: str, scs: int = 30, gscn: int = 7929,
             # Nombre base del archivo
             file_name = Path(mat_file).stem
             
-            # Guardar imagen del resource grid (igual que MATLAB)
-            fig, ax = plt.subplots(figsize=(10, 8))
-            im = ax.imshow(np.abs(grid_display), aspect='auto', cmap='jet', origin='lower')
-            ax.set_xlabel('Símbolos OFDM')
-            ax.set_ylabel('Subportadoras')
-            ax.set_title(f'Resource Grid - Cell ID: {cell_id}, SNR: {snr_db:.1f} dB')
+            # Guardar imagen del resource grid con máxima calidad
+            fig, ax = plt.subplots(figsize=(12, 10))
+            
+            # Usar interpolación 'nearest' para ver resource elements claramente
+            # y aumentar DPI para mejor resolución
+            im = ax.imshow(
+                np.abs(grid_display), 
+                aspect='auto', 
+                cmap='jet', 
+                origin='lower',
+                interpolation='nearest'  # Sin suavización, bordes nítidos
+            )
+            
+            ax.set_xlabel('Símbolos OFDM', fontsize=12)
+            ax.set_ylabel('Subportadoras', fontsize=12)
+            ax.set_title(f'Resource Grid - Cell ID: {cell_id}, SNR: {snr_db:.1f} dB', fontsize=14)
             plt.colorbar(im, ax=ax, label='Magnitud')
             
+            # Añadir grid menor para visualizar resource elements individuales
+            ax.grid(True, which='both', alpha=0.2, linewidth=0.5)
+            ax.set_xticks(np.arange(-0.5, grid_display.shape[1], 1), minor=True)
+            ax.set_yticks(np.arange(-0.5, grid_display.shape[0], 1), minor=True)
+            
             image_file = output_path / f'{file_name}_resource_grid.png'
-            plt.savefig(image_file, dpi=150, bbox_inches='tight')
+            plt.savefig(image_file, dpi=300, bbox_inches='tight')  # DPI aumentado a 300
             plt.close(fig)
             print(f"\n✓ Imagen guardada: {image_file}")
             
@@ -555,7 +570,7 @@ if __name__ == '__main__':
     import sys
     
     # Archivo de prueba
-    test_file = '5GDetection/capturas_disco_sin/timestamp_20251210_120401_686.mat'
+    test_file = '5GDetection/capturas_disco_con/timestamp_20251210_120747_292.mat'
     output_folder = 'resource_grids_output'  # Carpeta por defecto
     
     if len(sys.argv) > 1:
