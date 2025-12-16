@@ -195,7 +195,8 @@ def demodulate_file(mat_file: str,
                    lmax: int = 8,
                    output_folder: Optional[str] = None,
                    save_plot: bool = True,
-                   verbose: bool = False) -> Optional[Dict[str, Any]]:
+                   verbose: bool = False,
+                   show_axes: bool = False) -> Optional[Dict[str, Any]]:
     """
     Demodula un archivo .mat y opcionalmente guarda resultados.
     
@@ -207,6 +208,7 @@ def demodulate_file(mat_file: str,
         output_folder: Carpeta para guardar resultados (None = no guardar)
         save_plot: Guardar imagen del resource grid
         verbose: Mostrar información detallada del procesamiento
+        show_axes: Mostrar ejes y etiquetas en las imágenes
     
     Returns:
         Diccionario con resultados o None si falla
@@ -260,7 +262,8 @@ def demodulate_file(mat_file: str,
                     results['snr_db'],
                     output_folder=output_folder,
                     filename=f'{file_name}_resource_grid',
-                    verbose=verbose
+                    verbose=verbose,
+                    show_axes=show_axes
                 )
             
             # Solo guardar log individual en modo verbose
@@ -292,7 +295,8 @@ def demodulate_folder(folder_path: str,
                      lmax: int = 8,
                      output_folder: Optional[str] = None,
                      pattern: str = "*.mat",
-                     verbose: bool = False) -> Dict[str, Any]:
+                     verbose: bool = False,
+                     show_axes: bool = False) -> Dict[str, Any]:
     """
     Demodula todos los archivos .mat en una carpeta.
     
@@ -304,6 +308,7 @@ def demodulate_folder(folder_path: str,
         output_folder: Carpeta para guardar resultados
         pattern: Patrón de archivos a procesar
         verbose: Mostrar información detallada del procesamiento
+        show_axes: Mostrar ejes y etiquetas en las imágenes
     
     Returns:
         Diccionario con estadísticas y resultados
@@ -333,7 +338,8 @@ def demodulate_folder(folder_path: str,
             gscn=gscn,
             lmax=lmax,
             output_folder=output_folder,
-            verbose=verbose
+            verbose=verbose,
+            show_axes=show_axes
         )
         
         if result is not None:

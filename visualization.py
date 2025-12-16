@@ -16,7 +16,8 @@ def plot_resource_grid(grid_display: np.ndarray,
                        output_folder: Optional[str] = None,
                        filename: str = "resource_grid",
                        show: bool = False,
-                       verbose: bool = False) -> Optional[Path]:
+                       verbose: bool = False,
+                       show_axes: bool = False) -> Optional[Path]:
     """
     Genera y guarda una visualización del resource grid.
     
@@ -28,6 +29,7 @@ def plot_resource_grid(grid_display: np.ndarray,
         filename: Nombre base del archivo (sin extensión)
         show: Mostrar la figura en pantalla
         verbose: Mostrar mensaje al guardar
+        show_axes: Si True, muestra ejes y etiquetas. Por defecto False (sin ejes)
     
     Returns:
         Path del archivo guardado o None si no se guardó
@@ -43,22 +45,26 @@ def plot_resource_grid(grid_display: np.ndarray,
         interpolation='nearest'
     )
     
-    ax.set_xlabel('Símbolos OFDM', fontsize=12)
-    ax.set_ylabel('Subportadoras', fontsize=12)
-    ax.set_title(f'Resource Grid - Cell ID: {cell_id}, SNR: {snr_db:.1f} dB', fontsize=14)
-    plt.colorbar(im, ax=ax, label='Magnitud')
-    
-    # Grid para visualizar resource elements individuales
-    ax.grid(True, which='both', alpha=0.2, linewidth=0.5)
-    ax.set_xticks(np.arange(-0.5, grid_display.shape[1], 1), minor=True)
-    ax.set_yticks(np.arange(-0.5, grid_display.shape[0], 1), minor=True)
+    if show_axes:
+        ax.set_xlabel('Símbolos OFDM', fontsize=12)
+        ax.set_ylabel('Subportadoras', fontsize=12)
+        ax.set_title(f'Resource Grid - Cell ID: {cell_id}, SNR: {snr_db:.1f} dB', fontsize=14)
+        plt.colorbar(im, ax=ax, label='Magnitud')
+        
+        # Grid para visualizar resource elements individuales
+        ax.grid(True, which='both', alpha=0.2, linewidth=0.5)
+        ax.set_xticks(np.arange(-0.5, grid_display.shape[1], 1), minor=True)
+        ax.set_yticks(np.arange(-0.5, grid_display.shape[0], 1), minor=True)
+    else:
+        # Sin ejes: solo la imagen del resource grid
+        ax.axis('off')
     
     image_file = None
     if output_folder is not None:
         output_path = Path(output_folder)
         output_path.mkdir(parents=True, exist_ok=True)
         image_file = output_path / f'{filename}.png'
-        plt.savefig(image_file, dpi=300, bbox_inches='tight')
+        plt.savefig(image_file, dpi=300, bbox_inches='tight', pad_inches=0 if not show_axes else 0.1)
         if verbose:
             print(f"✓ Imagen guardada: {image_file}")
     

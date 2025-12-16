@@ -70,6 +70,12 @@ def main():
         help='Mostrar información detallada del procesamiento (por defecto modo silencioso)'
     )
     
+    parser.add_argument(
+        '--show-axes',
+        action='store_true',
+        help='Mostrar ejes y etiquetas en las imágenes (por defecto sin ejes)'
+    )
+    
     args = parser.parse_args()
     
     input_path = Path(args.input)
@@ -87,7 +93,8 @@ def main():
             lmax=args.lmax,
             output_folder=args.output,
             save_plot=not args.no_plot,
-            verbose=args.verbose
+            verbose=args.verbose,
+            show_axes=args.show_axes
         )
         
         if result:
@@ -106,7 +113,8 @@ def main():
             lmax=args.lmax,
             output_folder=args.output,
             pattern=args.pattern,
-            verbose=args.verbose
+            verbose=args.verbose,
+            show_axes=args.show_axes
         )
         
         if summary['successful'] > 0:
