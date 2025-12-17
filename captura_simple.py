@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Script simple de captura y demodulación 5G NR con USRP B210.
-Captura una señal, la demodula y muestra el resource grid con ejes.
+Simple 5G NR capture and demodulation script with USRP B210.
+Captures a signal, demodulates it and displays the resource grid with axes.
 """
 
 import uhd
@@ -17,17 +17,17 @@ from visualization import plot_resource_grid
 
 
 def list_usrp_devices():
-    """Lista dispositivos USRP disponibles."""
-    print('\n=== DISPOSITIVOS USRP DISPONIBLES ===')
+    """Lists available USRP devices."""
+    print('\n=== AVAILABLE USRP DEVICES ===')
     device_addrs = uhd.find("")
 
     if not device_addrs:
-        print('No se encontraron dispositivos USRP conectados.')
+        print('No USRP devices found connected.')
         return []
 
     devices = []
     for idx, addr in enumerate(device_addrs):
-        print(f'\n[{idx}] Dispositivo encontrado:')
+        print(f'\n[{idx}] Device found:')
         device_info = {}
         for key in addr.keys():
             value = addr.get(key)
@@ -40,79 +40,79 @@ def list_usrp_devices():
 
 
 def select_usrp_device(device_index=None, device_serial=None):
-    """Selecciona un dispositivo USRP."""
+    """Selects a USRP device."""
     devices = list_usrp_devices()
 
     if not devices:
-        raise RuntimeError("No hay dispositivos USRP disponibles")
+        raise RuntimeError("No USRP devices available")
 
     if device_index is not None:
         if 0 <= device_index < len(devices):
             selected = devices[device_index]
-            print(f'\n✓ Seleccionado dispositivo [{device_index}]: {selected.get("serial", "N/A")}')
+            print(f'\n✓ Selected device [{device_index}]: {selected.get("serial", "N/A")}')
             if 'serial' in selected:
                 return f"serial={selected['serial']}"
             return ""
         else:
-            raise ValueError(f"Índice {device_index} fuera de rango. Hay {len(devices)} dispositivos.")
+            raise ValueError(f"Index {device_index} out of range. There are {len(devices)} devices.")
 
     if device_serial is not None:
         for dev in devices:
             if dev.get('serial') == device_serial:
-                print(f'\n✓ Seleccionado dispositivo con serial: {device_serial}')
+                print(f'\n✓ Selected device with serial: {device_serial}')
                 return f"serial={device_serial}"
-        raise ValueError(f"No se encontró dispositivo con serial: {device_serial}")
+        raise ValueError(f"Device with serial not found: {device_serial}")
 
     if len(devices) == 1:
         selected = devices[0]
-        print(f'\n✓ Usando único dispositivo disponible: {selected.get("serial", "N/A")}')
+        print(f'\n✓ Using only available device: {selected.get("serial", "N/A")}')
         if 'serial' in selected:
             return f"serial={selected['serial']}"
         return ""
 
-    print(f'\n⚠ Hay {len(devices)} dispositivos. Especifica --device-index o --device-serial')
-    raise RuntimeError("Múltiples dispositivos encontrados. Especifica cuál usar.")
+    print(f'\n⚠ There are {len(devices)} devices. Specify --device-index or --device-serial')
+    raise RuntimeError("Multiple devices found. Specify which one to use.")
 
 
 def gscn_to_frequency(gscn: int) -> float:
-    """Convierte GSCN a frecuencia en Hz."""
+    """Converts GSCN to frequency in Hz."""
     if 7499 <= gscn <= 22255:
         N = gscn - 7499
         freq_hz = 3000e6 + N * 1.44e6
         return freq_hz
     else:
-        raise ValueError(f"GSCN {gscn} fuera de rango FR1")
+        raise ValueError(f"GSCN {gscn} out of FR1 range")
 
 
 def capture_waveform(center_freq, sample_rate, gain, duration, device_args=""):
-    """Captura una señal con el USRP B210."""
-    print('\n--- Configurando USRP B210 ---')
+    """Captures a signal with the USRP B210."""
+    print('\n--- Configuring USRP B210 ---')
     
-    # Crear objeto USRP
+    # Create USRP object
     usrp = uhd.usrp.MultiUSRP(device_args)
     
-    # Configurar tasa de muestreo
+    # Configure sample rate
     usrp.set_rx_rate(sample_rate, 0)
     actual_rate = usrp.get_rx_rate(0)
-    print(f'Tasa de muestreo: {actual_rate/1e6:.2f} MHz')
+    print(f'Sample rate: {actual_rate/1e6:.2f} MHz')
     
-    # Configurar frecuencia central
+    # Configure center frequency
     tune_request = uhd.types.TuneRequest(center_freq)
     usrp.set_rx_freq(tune_request, 0)
     actual_freq = usrp.get_rx_freq(0)
-    print(f'Frecuencia central: {actual_freq/1e6:.2f} MHz')
+    print(f'Center frequency: {actual_freq/1e6:.2f} MHz')
     
-    # Configurar ganancia
+    # Configure gain
     usrp.set_rx_gain(gain, 0)
     actual_gain = usrp.get_rx_gain(0)
-    print(f'Ganancia: {actual_gain:.1f} dB')
+    print(f'Gain: {actual_gain:.1f} dB')
     
-    # Configurar antena
+    # Configure antenna
     usrp.set_rx_antenna("RX2", 0)
-    print(f'Antena: {usrp.get_rx_antenna(0)}')
+    print(f'Antenna: {usrp.get_rx_antenna(0)}')
     
-    # Capturar
-    print(f'\n--- Capturando {duration*1000:.1f} ms ---')
+    # Capture
+    print(f'\n--- Capturing {duration*1000:.1f} ms ---')
     num_samples = int(duration * sample_rate)
     samples = np.zeros(num_samples, dtype=np.complex64)
     
@@ -132,25 +132,25 @@ def capture_waveform(center_freq, sample_rate, gain, duration, device_args=""):
     while samples_received < num_samples:
         num_rx_samps = rx_streamer.recv(recv_buffer, metadata, 1.0)
         if metadata.error_code != uhd.types.RXMetadataErrorCode.none:
-            print(f'⚠ Error en recepción: {metadata.strerror()}')
+            print(f'⚠ Reception error: {metadata.strerror()}')
             break
         end_idx = min(samples_received + num_rx_samps, num_samples)
         samples[samples_received:end_idx] = recv_buffer[0, :end_idx - samples_received]
         samples_received = end_idx
     
-    print(f'✓ Capturados {len(samples)} muestras')
+    print(f'✓ Captured {len(samples)} samples')
     power_dbm = 10 * np.log10(np.mean(np.abs(samples)**2) + 1e-12)
-    print(f'✓ Potencia de señal: {power_dbm:.1f} dB')
+    print(f'✓ Signal power: {power_dbm:.1f} dB')
     
     return samples
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Captura simple de señal 5G NR con USRP B210',
+        description='Simple 5G NR signal capture with USRP B210',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog='''
-Ejemplos de uso:
+Usage examples:
   %(prog)s
   %(prog)s --gscn 7880
   %(prog)s --device-index 0
@@ -160,19 +160,19 @@ Ejemplos de uso:
     )
     
     parser.add_argument('--list-devices', action='store_true',
-                        help='Listar dispositivos USRP disponibles y salir')
+                        help='List available USRP devices and exit')
     parser.add_argument('--device-index', type=int, metavar='N',
-                        help='Índice del dispositivo a usar (0, 1, 2, ...)')
+                        help='Device index to use (0, 1, 2, ...)')
     parser.add_argument('--device-serial', type=str, metavar='SERIAL',
-                        help='Número de serie del dispositivo a usar')
+                        help='Device serial number to use')
     parser.add_argument('--gscn', type=int,
-                        help='GSCN del canal (default: desde config.yaml)')
+                        help='Channel GSCN (default: from config.yaml)')
     parser.add_argument('--scs', type=int, choices=[15, 30],
-                        help='Subcarrier spacing en kHz (default: desde config.yaml)')
+                        help='Subcarrier spacing in kHz (default: from config.yaml)')
     parser.add_argument('--gain', type=float,
-                        help='Ganancia del receptor en dB (default: desde config.yaml)')
+                        help='Receiver gain in dB (default: from config.yaml)')
     parser.add_argument('--duration', type=float, default=0.02,
-                        help='Duración de captura en segundos (default: 0.02)')
+                        help='Capture duration in seconds (default: 0.02)')
     
     args = parser.parse_args()
     
@@ -190,26 +190,26 @@ Ejemplos de uso:
     gain = args.gain if args.gain is not None else config.gain
     sample_rate = config.sample_rate
     
-    print('=== CAPTURA Y DEMODULACIÓN 5G NR ===\n')
-    print(f'Configuración:')
+    print('=== 5G NR CAPTURE AND DEMODULATION ===\n')
+    print(f'Configuration:')
     print(f'  GSCN: {gscn}')
     print(f'  SCS: {scs} kHz')
-    print(f'  Ganancia: {gain} dB')
+    print(f'  Gain: {gain} dB')
     print(f'  Sample rate: {sample_rate/1e6:.2f} MHz')
-    print(f'  Duración: {args.duration*1000:.1f} ms')
+    print(f'  Duration: {args.duration*1000:.1f} ms')
     
-    # Calcular frecuencia central
+    # Calculate center frequency
     center_freq = gscn_to_frequency(gscn)
-    print(f'  Frecuencia: {center_freq/1e6:.2f} MHz')
+    print(f'  Frequency: {center_freq/1e6:.2f} MHz')
     
     try:
-        # Seleccionar dispositivo
+        # Select device
         device_args = select_usrp_device(
             device_index=args.device_index,
             device_serial=args.device_serial
         )
         
-        # Capturar señal
+        # Capture signal
         waveform = capture_waveform(
             center_freq=center_freq,
             sample_rate=sample_rate,
@@ -218,25 +218,25 @@ Ejemplos de uso:
             device_args=device_args
         )
         
-        # Demodular
-        print('\n--- Demodulando ---')
+        # Demodulate
+        print('\n--- Demodulating ---')
         n_symbols = config.n_symbols_display
         results = demodulate_ssb(waveform, scs=scs, sample_rate=sample_rate, 
                                 n_symbols_display=n_symbols, verbose=False)
         
-        # Mostrar resultados
-        print('\n=== RESULTADOS ===')
+        # Display results
+        print('\n=== RESULTS ===')
         print(f'Cell ID: {results["cell_id"]}')
         print(f'  NID1: {results["nid1"]}')
         print(f'  NID2: {results["nid2"]}')
         print(f'Strongest SSB: {results["strongest_ssb"]}')
-        print(f'Potencia: {results["power_db"]:.1f} dB')
+        print(f'Power: {results["power_db"]:.1f} dB')
         print(f'SNR: {results["snr_db"]:.1f} dB')
         print(f'Freq offset: {results["freq_offset"]/1e3:.3f} kHz')
-        print(f'Timing offset: {results["timing_offset"]} muestras')
+        print(f'Timing offset: {results["timing_offset"]} samples')
         
-        # Visualizar resource grid con ejes
-        print('\n--- Mostrando Resource Grid ---')
+        # Visualize resource grid with axes
+        print('\n--- Displaying Resource Grid ---')
         fig, ax = plt.subplots(figsize=(12, 8))
         
         grid = results['grid_display']
@@ -253,14 +253,14 @@ Ejemplos de uso:
         plt.tight_layout()
         plt.show()
         
-        print('\n✓ Proceso completado')
+        print('\n✓ Process completed')
         
     except KeyboardInterrupt:
-        print('\n\n⚠ Interrumpido por usuario')
+        print('\n\n⚠ Interrupted by user')
         sys.exit(1)
     except Exception as e:
         print(f'\n❌ Error: {e}')
-        print('\nPuedes usar --list-devices para ver dispositivos disponibles')
+        print('\nYou can use --list-devices to see available devices')
         sys.exit(1)
 
 
