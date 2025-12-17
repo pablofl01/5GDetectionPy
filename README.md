@@ -1,119 +1,119 @@
-# Demodulador 5G NR
+# 5G NR Demodulator
 
-Demodulador de señales 5G NR desarrollado en Python que detecta Cell ID, SSB, potencia y SNR desde archivos `.mat` capturados con SDR o en tiempo real con USRP B210.
+5G NR signal demodulator developed in Python that detects Cell ID, SSB, power and SNR from `.mat` files captured with SDR or in real-time with USRP B210.
 
-## Instalación
+## Installation
 
 ```bash
-# Crear entorno virtual
+# Create virtual environment
 python -m venv env
 source env/bin/activate  # Windows: env\Scripts\activate
 
-# Instalar dependencias
+# Install dependencies
 pip install -r requirements.txt
 
-# Para captura con USRP (opcional)
+# For USRP capture (optional)
 pip install uhd pyyaml
 ```
 
-## Configuración
+## Configuration
 
-Los parámetros por defecto se definen en `config.yaml`. Este archivo centraliza todos los parámetros de RF, procesamiento, visualización y exportación. Los argumentos de la CLI sobreescriben los valores de `config.yaml`.
+Default parameters are defined in `config.yaml`. This file centralizes all RF, processing, visualization and export parameters. CLI arguments override values from `config.yaml`.
 
-### Parámetros principales en config.yaml
+### Main parameters in config.yaml
 
 ```yaml
 rf:
   gscn: 7929                 # Global Sync Channel Number
-  sample_rate: 19.5e6       # Tasa de muestreo (Hz)
+  sample_rate: 19.5e6       # Sample rate (Hz)
   scs: 30                   # Subcarrier spacing (kHz)
 
 processing:
-  nrb_ssb: 20               # Resource blocks para SSB
-  nrb_demod: 45             # Resource blocks para demodulación
-  search_bw: 90             # Ancho de banda de búsqueda (kHz)
+  nrb_ssb: 20               # Resource blocks for SSB
+  nrb_demod: 45             # Resource blocks for demodulation
+  search_bw: 90             # Search bandwidth (kHz)
 ```
 
-## Uso
+## Usage
 
-### 1. Procesamiento de archivos .mat (CLI)
+### 1. Processing .mat files (CLI)
 
-#### Uso básico
+#### Basic usage
 
 ```bash
-# Procesar archivo individual
+# Process individual file
 python demodulate_cli.py captura.mat -o resultados/
 
-# Procesar carpeta completa
+# Process complete folder
 python demodulate_cli.py carpeta/ -o resultados/
 
-# Sobreescribir parámetros de config.yaml
+# Override config.yaml parameters
 python demodulate_cli.py captura.mat -o resultados/ --scs 15 --gscn 7880
 
-# Ver todas las opciones
+# View all options
 python demodulate_cli.py --help
 ```
 
-#### Procesamiento paralelo (múltiples threads)
+#### Parallel processing (multiple threads)
 
-El CLI utiliza **procesamiento paralelo por defecto** (4 threads) para optimizar el tiempo al procesar múltiples archivos:
+The CLI uses **parallel processing by default** (4 threads) to optimize processing time for multiple files:
 
 ```bash
-# Usar 4 threads (default, ~40% más rápido que secuencial)
+# Use 4 threads (default, ~40% faster than sequential)
 python demodulate_cli.py carpeta/ -o resultados/
 
-# Usar 8 threads para carpetas grandes
+# Use 8 threads for large folders
 python demodulate_cli.py carpeta/ -o resultados/ --threads 8
 
-# Procesamiento secuencial (1 thread)
+# Sequential processing (1 thread)
 python demodulate_cli.py carpeta/ -o resultados/ --threads 1
 ```
 
-**Nota**: El procesamiento paralelo solo se activa al procesar carpetas desde la CLI. Al importar las funciones desde otro script Python (`demodulate_file`, `demodulate_ssb`), el procesamiento es siempre secuencial.
+**Note**: Parallel processing is only activated when processing folders from the CLI. When importing functions from another Python script (`demodulate_file`, `demodulate_ssb`), processing is always sequential.
 
-#### Formatos de exportación
+#### Export formats
 
-Controla qué archivos se generan con `--export`:
+Control which files are generated with `--export`:
 
 ```bash
-# Solo imágenes PNG del resource grid (default)
+# Only resource grid PNG images (default)
 python demodulate_cli.py carpeta/ -o resultados/
 
-# Solo archivos CSV con datos demodulados
+# Only CSV files with demodulated data
 python demodulate_cli.py carpeta/ -o resultados/ --export csv
 
-# Imágenes y CSV simultáneamente
+# Images and CSV simultaneously
 python demodulate_cli.py carpeta/ -o resultados/ --export both
 ```
 
-**Formatos disponibles**:
-- `images` (default): Genera `<archivo>_resource_grid.png` (visualización 540×54, 300 DPI)
-- `csv`: Genera `<archivo>_data.csv` con:
-  - Metadatos: Cell ID, NID1/NID2, SNR, potencia, offsets
-  - Resource grid completo: magnitud de cada subportadora × símbolo OFDM
-  - Compatible con Excel, pandas, MATLAB
-- `both`: Genera PNG + CSV
+**Available formats**:
+- `images` (default): Generates `<archivo>_resource_grid.png` (540×54 visualization, 300 DPI)
+- `csv`: Generates `<archivo>_data.csv` with:
+  - Metadata: Cell ID, NID1/NID2, SNR, power, offsets
+  - Complete resource grid: magnitude of each subcarrier × OFDM symbol
+  - Compatible with Excel, pandas, MATLAB
+- `both`: Generates PNG + CSV
 
-#### Opciones avanzadas
+#### Advanced options
 
 ```bash
-# Patrón específico de archivos
+# Specific file pattern
 python demodulate_cli.py carpeta/ -o resultados/ --pattern "timestamp_*.mat"
 
-# Modo verbose (logs detallados por archivo)
+# Verbose mode (detailed logs per file)
 python demodulate_cli.py carpeta/ -o resultados/ --verbose
 
-# Imágenes con ejes y etiquetas
+# Images with axes and labels
 python demodulate_cli.py carpeta/ -o resultados/ --show-axes
 
-# Sin imágenes (equivalente a --export csv)
+# No images (equivalent to --export csv)
 python demodulate_cli.py carpeta/ -o resultados/ --no-plot
 ```
 
-#### Ejemplo completo
+#### Complete example
 
 ```bash
-# Procesamiento optimizado: 8 threads, CSV + imágenes, patrón específico
+# Optimized processing: 8 threads, CSV + images, specific pattern
 python demodulate_cli.py test_samples/presence/ \
     -o resultados_presencia/ \
     --export both \
@@ -123,150 +123,150 @@ python demodulate_cli.py test_samples/presence/ \
     --gscn 7929
 ```
 
-### 2. Uso programático (API)
+### 2. Programmatic usage (API)
 
 ```python
 from nr_demodulator import demodulate_file, demodulate_ssb
 
-# Procesar archivo .mat
-resultado = demodulate_file('captura.mat', output_dir='resultados/', scs=30)
-print(f"Cell ID: {resultado['cell_id']}, SNR: {resultado['snr_db']:.1f} dB")
+# Process .mat file
+result = demodulate_file('capture.mat', output_dir='results/', scs=30)
+print(f"Cell ID: {result['cell_id']}, SNR: {result['snr_db']:.1f} dB")
 
-# Demodular waveform en memoria (captura en vivo)
-waveform = ...  # numpy array complejo desde SDR
-resultado = demodulate_ssb(waveform, scs=30, sample_rate=19.5e6, lmax=8)
+# Demodulate waveform in memory (live capture)
+waveform = ...  # complex numpy array from SDR
+result = demodulate_ssb(waveform, scs=30, sample_rate=19.5e6, lmax=8)
 ```
 
-### 3. Captura simple con USRP B210
+### 3. Simple capture with USRP B210
 
-Script simplificado para captura rápida, demodulación y visualización con ejes:
+Simplified script for quick capture, demodulation and visualization with axes:
 
 ```bash
-# Captura simple (usa config.yaml)
+# Simple capture (uses config.yaml)
 python captura_simple.py
 
-# Con GSCN específico
+# With specific GSCN
 python captura_simple.py --gscn 7880
 
-# Listar dispositivos USRP
+# List USRP devices
 python captura_simple.py --list-devices
 
-# Seleccionar dispositivo
+# Select device
 python captura_simple.py --device-index 0
 python captura_simple.py --device-serial 12345678
 
-# Ajustar ganancia y duración
+# Adjust gain and duration
 python captura_simple.py --gain 40 --duration 0.05
 ```
 
-**Características**:
-- Una sola captura (no guarda archivos)
-- Visualización con ejes (X: símbolos OFDM, Y: subportadoras)
-- Logs moderados (no verbosos)
-- Ideal para testing rápido
+**Features**:
+- Single capture (doesn't save files)
+- Visualization with axes (X: OFDM symbols, Y: subcarriers)
+- Moderate logs (not verbose)
+- Ideal for quick testing
 
-### 4. Monitoreo continuo con USRP B210
+### 4. Continuous monitoring with USRP B210
 
-Para capturas múltiples y monitoreo prolongado:
+For multiple captures and prolonged monitoring:
 
 ```bash
-# Listar dispositivos USRP
+# List USRP devices
 python monitoreo_continuo.py --list-devices
 
-# Captura y procesamiento continuo
+# Continuous capture and processing
 python monitoreo_continuo.py --config config.yaml
 
-# Modo simulación (sin hardware)
+# Simulation mode (no hardware)
 python monitoreo_continuo.py --simulate
 ```
 
-**Características**:
-- Múltiples capturas con intervalo configurable
-- Visualización con slider temporal
-- Guardado opcional de resultados
-- Control completo de parámetros
+**Features**:
+- Multiple captures with configurable interval
+- Visualization with temporal slider
+- Optional result saving
+- Complete parameter control
 
-## Estructura del proyecto
+## Project structure
 
 ```
 5GDetectionPy/
-├── nr_demodulator.py           # API principal de demodulación
-├── frequency_correction.py     # Corrección de offset de frecuencia
-├── timing_estimation.py        # Estimación de timing offset
-├── cell_detection.py           # Detección de Cell ID y SSB
-├── visualization.py            # Visualización y logging
-├── config_loader.py            # Carga de configuración YAML
-├── demodulate_cli.py           # CLI para archivos .mat
-├── captura_simple.py           # Captura rápida con USRP
-├── monitoreo_continuo.py       # Monitoreo continuo USRP
-└── config.yaml                 # Configuración centralizada
+├── nr_demodulator.py           # Main demodulation API
+├── frequency_correction.py     # Frequency offset correction
+├── timing_estimation.py        # Timing offset estimation
+├── cell_detection.py           # Cell ID and SSB detection
+├── visualization.py            # Visualization and logging
+├── config_loader.py            # YAML configuration loader
+├── demodulate_cli.py           # CLI for .mat files
+├── captura_simple.py           # Quick capture with USRP
+├── monitoreo_continuo.py       # Continuous USRP monitoring
+└── config.yaml                 # Centralized configuration
 ```
 
-## Salida
+## Output
 
-Al procesar archivos se generan (según opciones):
+When processing files, the following are generated (depending on options):
 
-### Archivos generados con `--export images` (default)
-- `<archivo>_resource_grid.png` - Visualización del resource grid (540×54, 300 DPI)
-- `<archivo>_info.txt` - Log individual (solo en modo `--verbose`)
-- `<archivo>_ERROR.txt` - Log de errores (si ocurren en modo `--verbose`)
-- `processing_log.txt` - Resumen completo con todos los archivos procesados
+### Files generated with `--export images` (default)
+- `<archivo>_resource_grid.png` - Resource grid visualization (540×54, 300 DPI)
+- `<archivo>_info.txt` - Individual log (only in `--verbose` mode)
+- `<archivo>_ERROR.txt` - Error log (if errors occur in `--verbose` mode)
+- `processing_log.txt` - Complete summary with all processed files
 
-### Archivos generados con `--export csv`
-- `<archivo>_data.csv` - Datos demodulados en CSV:
-  - Metadatos: Cell ID, NID1, NID2, SNR, potencia, offsets, etc.
-  - Resource grid completo: magnitud de cada subportadora × símbolo OFDM
-  - Compatible con Excel, pandas, MATLAB, etc.
-- `processing_log.txt` - Resumen completo del procesamiento
+### Files generated with `--export csv`
+- `<archivo>_data.csv` - Demodulated data in CSV:
+  - Metadata: Cell ID, NID1, NID2, SNR, power, offsets, etc.
+  - Complete resource grid: magnitude of each subcarrier × OFDM symbol
+  - Compatible with Excel, pandas, MATLAB, etc.
+- `processing_log.txt` - Complete processing summary
 
-### Archivos generados con `--export both`
-- Todos los archivos anteriores (PNG + CSV + logs)
+### Files generated with `--export both`
+- All previous files (PNG + CSV + logs)
 
-## Parámetros
+## Parameters
 
-Todos los scripts usan `config.yaml` por defecto. Los argumentos CLI sobreescriben estos valores.
+All scripts use `config.yaml` by default. CLI arguments override these values.
 
 ### demodulate_cli.py
 
-| Parámetro | Descripción | Default |
-|-----------|-------------|---------|
-| `--scs` | Subcarrier spacing (kHz: 15 o 30) | config.yaml (30) |
-| `--gscn` | GSCN del canal | config.yaml (7929) |
-| `--lmax` | Número de SSB bursts | 8 |
-| `--pattern` | Patrón de archivos para carpetas | `*.mat` |
-| `--threads` | Número de threads para procesamiento paralelo | 4 |
-| `--export` | Formato de salida: `images`, `csv`, `both` | `images` |
-| `--verbose` | Modo detallado con logs individuales | False |
-| `--show-axes` | Imágenes con ejes y etiquetas | False |
-| `--no-plot` | No guardar imágenes (deprecado, usar `--export csv`) | False |
+| Parameter | Description | Default |
+|-----------|-------------|---------||
+| `--scs` | Subcarrier spacing (kHz: 15 or 30) | config.yaml (30) |
+| `--gscn` | Channel GSCN | config.yaml (7929) |
+| `--lmax` | Number of SSB bursts | 8 |
+| `--pattern` | File pattern for folders | `*.mat` |
+| `--threads` | Number of threads for parallel processing | 4 |
+| `--export` | Output format: `images`, `csv`, `both` | `images` |
+| `--verbose` | Detailed mode with individual logs | False |
+| `--show-axes` | Images with axes and labels | False |
+| `--no-plot` | Don't save images (deprecated, use `--export csv`) | False |
 
 ### captura_simple.py
 
-| Parámetro | Descripción | Default |
+| Parameter | Description | Default |
 |-----------|-------------|---------|
-| `--device-index` | Índice dispositivo USRP | Auto |
-| `--device-serial` | Serial dispositivo USRP | Auto |
-| `--gscn` | GSCN del canal | config.yaml (7929) |
+| `--device-index` | USRP device index | Auto |
+| `--device-serial` | USRP device serial | Auto |
+| `--gscn` | Channel GSCN | config.yaml (7929) |
 | `--scs` | Subcarrier spacing (kHz) | config.yaml (30) |
-| `--gain` | Ganancia receptor (dB) | config.yaml (50) |
-| `--duration` | Duración captura (s) | 0.02 |
-| `--list-devices` | Listar dispositivos USRP | - |
+| `--gain` | Receiver gain (dB) | config.yaml (50) |
+| `--duration` | Capture duration (s) | 0.02 |
+| `--list-devices` | List USRP devices | - |
 
 ## Troubleshooting
 
 ```bash
-# Módulos faltantes
+# Missing modules
 pip install py3gpp h5py uhd pyyaml
 
-# Verificar USRP
+# Verify USRP
 uhd_find_devices
 python monitoreo_continuo.py --list-devices
 
-# Sin hardware USRP
+# Without USRP hardware
 python monitoreo_continuo.py --simulate
 ```
 
-## Referencias
+## References
 
-- [py3gpp](https://github.com/NajibOdhah/py3gpp) - Implementación Python de 5G NR
+- [py3gpp](https://github.com/NajibOdhah/py3gpp) - Python implementation of 5G NR
 - [3GPP TS 38.211](https://www.3gpp.org/DynaReport/38211.htm) - Physical channels and modulation

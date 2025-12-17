@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Interfaz de línea de comandos para demodulación 5G NR.
-Permite procesar archivos individuales o carpetas completas.
+Command line interface for 5G NR demodulation.
+Allows processing individual files or complete folders.
 """
 
 import sys
@@ -13,24 +13,24 @@ from config_loader import get_config
 
 
 def main():
-    # Cargar configuración para defaults
+    # Load configuration for defaults
     config = get_config()
     
     parser = argparse.ArgumentParser(
-        description='Demodulador 5G NR - Procesa archivos .mat individuales o carpetas completas'
+        description='5G NR Demodulator - Processes individual .mat files or complete folders'
     )
     
     parser.add_argument(
         'input',
         type=str,
-        help='Archivo .mat o carpeta con archivos .mat'
+        help='.mat file or folder with .mat files'
     )
     
     parser.add_argument(
         '-o', '--output',
         type=str,
         default='demodulation_results',
-        help='Carpeta de salida para resultados (default: demodulation_results)'
+        help='Output folder for results (default: demodulation_results)'
     )
     
     parser.add_argument(
@@ -38,53 +38,53 @@ def main():
         type=int,
         default=None,
         choices=[15, 30],
-        help=f'Subcarrier spacing en kHz (default: {config.scs} desde config.yaml)'
+        help=f'Subcarrier spacing in kHz (default: {config.scs} from config.yaml)'
     )
     
     parser.add_argument(
         '--gscn',
         type=int,
         default=None,
-        help=f'GSCN del canal (default: {config.gscn} desde config.yaml)'
+        help=f'Channel GSCN (default: {config.gscn} from config.yaml)'
     )
     
     parser.add_argument(
         '--lmax',
         type=int,
         default=8,
-        help='Número de SSB bursts (default: 8)'
+        help='Number of SSB bursts (default: 8)'
     )
     
     parser.add_argument(
         '--pattern',
         type=str,
         default='*.mat',
-        help='Patrón de archivos para carpetas (default: *.mat)'
+        help='File pattern for folders (default: *.mat)'
     )
     
     parser.add_argument(
         '--no-plot',
         action='store_true',
-        help='No guardar imágenes de resource grids'
+        help="Don't save resource grid images"
     )
     
     parser.add_argument(
         '--verbose',
         action='store_true',
-        help='Mostrar información detallada del procesamiento (por defecto modo silencioso)'
+        help='Display detailed processing information (default: silent mode)'
     )
     
     parser.add_argument(
         '--show-axes',
         action='store_true',
-        help='Mostrar ejes y etiquetas en las imágenes (por defecto sin ejes)'
+        help='Show axes and labels in images (default: no axes)'
     )
     
     parser.add_argument(
         '--threads',
         type=int,
         default=4,
-        help='Número de threads para procesamiento paralelo (default: 4)'
+        help='Number of threads for parallel processing (default: 4)'
     )
     
     parser.add_argument(
@@ -92,7 +92,7 @@ def main():
         type=str,
         default='images',
         choices=['images', 'csv', 'both'],
-        help='Formato de exportación: images (resource grids), csv (datos demodulados), o both (default: images)'
+        help='Export format: images (resource grids), csv (demodulated data), or both (default: images)'
     )
     
     args = parser.parse_args()
@@ -100,14 +100,14 @@ def main():
     input_path = Path(args.input)
     
     if not input_path.exists():
-        print(f"✗ Error: No existe {args.input}")
+        print(f"✗ Error: {args.input} does not exist")
         sys.exit(1)
     
-    # Determinar si guardar imágenes o CSV según --export
+    # Determine whether to save images or CSV based on --export
     save_plot = (args.export in ['images', 'both']) and not args.no_plot
     save_csv = (args.export in ['csv', 'both'])
     
-    # Procesar archivo o carpeta
+    # Process file or folder
     if input_path.is_file():
         result = demodulate_file(
             str(input_path),
@@ -122,11 +122,11 @@ def main():
         )
         
         if result:
-            print(f"\n✓ Procesamiento completado exitosamente")
-            print(f"✓ Resultados guardados en: {args.output}/")
+            print(f"\n✓ Processing completed successfully")
+            print(f"✓ Results saved in: {args.output}/")
             sys.exit(0)
         else:
-            print(f"\n✗ Procesamiento falló")
+            print(f"\n✗ Processing failed")
             sys.exit(1)
     
     elif input_path.is_dir():
@@ -145,14 +145,14 @@ def main():
         )
         
         if summary['successful'] > 0:
-            print(f"\n✓ Resultados guardados en: {args.output}/")
+            print(f"\n✓ Results saved in: {args.output}/")
             sys.exit(0 if summary['failed'] == 0 else 2)
         else:
-            print(f"\n✗ Todos los archivos fallaron")
+            print(f"\n✗ All files failed")
             sys.exit(1)
     
     else:
-        print(f"✗ Error: {args.input} no es un archivo o carpeta válido")
+        print(f"✗ Error: {args.input} is not a valid file or folder")
         sys.exit(1)
 
 

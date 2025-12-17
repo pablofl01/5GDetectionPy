@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Demodulador 5G NR - Funciones principales de demodulación.
+5G NR Demodulator - Main demodulation functions.
 """
 
 import numpy as np
@@ -18,7 +18,7 @@ try:
     HAS_H5PY = True
 except ImportError:
     HAS_H5PY = False
-    warnings.warn("h5py no disponible. Solo se pueden leer .mat v7 y anteriores.")
+    warnings.warn("h5py not available. Only .mat v7 and earlier can be read.")
 
 from frequency_correction import frequency_correction_ofdm
 from timing_estimation import estimate_timing_offset
@@ -31,13 +31,13 @@ from config_loader import get_config
 
 def load_mat_file(filename: str) -> np.ndarray:
     """
-    Carga waveform desde archivo .mat (v7 o v7.3 HDF5).
+    Loads waveform from .mat file (v7 or v7.3 HDF5).
     
     Args:
-        filename: Ruta al archivo .mat
+        filename: Path to .mat file
     
     Returns:
-        waveform: Array complejo con la señal IQ
+        waveform: Complex array with IQ signal
     """
     try:
         mat_data = loadmat(filename)
@@ -57,7 +57,7 @@ def load_mat_file(filename: str) -> np.ndarray:
                 waveform = waveform.flatten()
                 return waveform
         except Exception as e2:
-            raise RuntimeError(f"Error leyendo .mat: v7 falló ({e1}), v7.3 falló ({e2})")
+            raise RuntimeError(f"Error reading .mat: v7 failed ({e1}), v7.3 failed ({e2})")
 
 
 def demodulate_ssb(waveform: np.ndarray,
@@ -67,33 +67,33 @@ def demodulate_ssb(waveform: np.ndarray,
                    n_symbols_display: Optional[int] = None,
                    verbose: bool = False) -> Dict[str, Any]:
     """
-    Demodula una señal SSB y detecta Cell ID.
-    Función principal para uso desde otros scripts.
+    Demodulates an SSB signal and detects Cell ID.
+    Main function for use from other scripts.
     
     Args:
-        waveform: Señal IQ capturada
-        scs: Subcarrier spacing en kHz (15 o 30). Si None, usa config.yaml
-        sample_rate: Sample rate en Hz. Si None, usa config.yaml
-        lmax: Número de SSB bursts a procesar (típicamente 8)
-        n_symbols_display: Número de símbolos OFDM a demodular (6-14). Si None, usa config.yaml
-        verbose: Mostrar información detallada del procesamiento
+        waveform: Captured IQ signal
+        scs: Subcarrier spacing in kHz (15 or 30). If None, uses config.yaml
+        sample_rate: Sample rate in Hz. If None, uses config.yaml
+        lmax: Number of SSB bursts to process (typically 8)
+        n_symbols_display: Number of OFDM symbols to demodulate (6-14). If None, uses config.yaml
+        verbose: Display detailed processing information
     
     Returns:
-        dict con:
-            - cell_id: Physical Cell ID detectado
-            - nid1, nid2: Componentes del Cell ID
-            - strongest_ssb: Índice del SSB más fuerte
-            - power_db: Potencia en dB
-            - snr_db: SNR estimado en dB
-            - freq_offset: Offset de frecuencia en Hz
-            - timing_offset: Offset de timing en muestras
-            - grid_display: Resource grid para visualización (540×54)
-            - waveform_corrected: Waveform con correcciones aplicadas
+        dict with:
+            - cell_id: Detected Physical Cell ID
+            - nid1, nid2: Cell ID components
+            - strongest_ssb: Index of the strongest SSB
+            - power_db: Power in dB
+            - snr_db: Estimated SNR in dB
+            - freq_offset: Frequency offset in Hz
+            - timing_offset: Timing offset in samples
+            - grid_display: Resource grid for visualization (540×54)
+            - waveform_corrected: Waveform with corrections applied
     """
-    # Cargar configuración
+    # Load configuration
     config = get_config()
     
-    # Usar valores de config si no se especifican
+    # Use config values if not specified
     if scs is None:
         scs = config.scs
     if sample_rate is None:
@@ -101,22 +101,22 @@ def demodulate_ssb(waveform: np.ndarray,
     if n_symbols_display is None:
         n_symbols_display = config.n_symbols_display
     
-    # 1. Corrección de frecuencia
+    # 1. Frequency correction
     if verbose:
-        print("Corrección de frecuencia y detección PSS...")
-    search_bw = config.search_bw  # En kHz desde config.yaml
+        print("Frequency correction and PSS detection...")
+    search_bw = config.search_bw  # In kHz from config.yaml
     waveform_corrected, freq_offset, nid2 = frequency_correction_ofdm(
         waveform, scs, sample_rate, search_bw, verbose=verbose
     )
     if verbose:
-        print(f"  → NID2 detectado: {nid2}")
-        print(f"  → Offset de frecuencia: {freq_offset/1e3:.3f} kHz")
+        print(f"  → Detected NID2: {nid2}")
+        print(f"  → Frequency offset: {freq_offset/1e3:.3f} kHz")
     
-    # 2. Estimación de timing
+    # 2. Timing estimation
     timing_offset = estimate_timing_offset(waveform_corrected, nid2, scs, sample_rate, verbose=verbose)
     waveform_aligned = waveform_corrected[timing_offset:]
     
-    # 3. Demodulación OFDM del primer SSB
+    # 3. OFDM demodulation of the first SSB
     nrb_ssb = config.nrb_ssb
     n_symbols_ssb = 4
     nfft_ssb = 256
@@ -142,11 +142,11 @@ def demodulate_ssb(waveform: np.ndarray,
         SampleRate=sample_rate
     )
     
-    # 4. Detección de Cell ID
+    # 4. Cell ID detection
     nid1, max_corr = detect_cell_id(grid_ssb, nid2, verbose=verbose)
     cell_id = 3 * nid1 + nid2
     
-    # 5. Demodular todos los SSB bursts
+    # 5. Demodulate all SSB bursts
     ssb_grids = np.zeros((nrb_ssb * 12, n_symbols_ssb, lmax), dtype=complex)
     samples_per_ssb_period = int(sample_rate * 0.02 / lmax)
     
@@ -165,10 +165,10 @@ def demodulate_ssb(waveform: np.ndarray,
             )
             ssb_grids[:, :, i_ssb] = grid[:, :n_symbols_ssb]
     
-    # 6. Detectar SSB más fuerte
+    # 6. Detect strongest SSB
     strongest_ssb, power_db, snr_db = detect_strongest_ssb(ssb_grids, nid2, nid1, lmax, verbose=verbose)
     
-    # 7. Crear resource grid para visualización (45 RB)
+    # 7. Create resource grid for visualization (45 RB)
     demod_rb = config.nrb_demod
     grid_full = nrOFDMDemodulate(
         waveform=waveform_aligned,
@@ -178,12 +178,12 @@ def demodulate_ssb(waveform: np.ndarray,
         SampleRate=sample_rate
     )
     
-    # Extraer solo los símbolos solicitados desde config
+    # Extract only requested symbols from config
     n_subcarriers = grid_full.shape[0]
     n_symbols_available = grid_full.shape[1]
     target_symbols = min(n_symbols_display, n_symbols_available)
     
-    # Tomar los símbolos disponibles hasta el target
+    # Take available symbols up to target
     grid_display = grid_full[:, :target_symbols]
     
     return {
@@ -211,20 +211,20 @@ def demodulate_file(mat_file: str,
                    verbose: bool = False,
                    show_axes: bool = False) -> Optional[Dict[str, Any]]:
     """
-    Demodula un archivo .mat y opcionalmente guarda resultados.
+    Demodulates a .mat file and optionally saves results.
     
     Args:
-        mat_file: Ruta al archivo .mat
-        scs: Subcarrier spacing en kHz (Si None, usa config.yaml)
-        gscn: GSCN del canal (Si None, usa config.yaml)
-        lmax: Número de SSB bursts
-        output_folder: Carpeta para guardar resultados (None = no guardar)
-        save_plot: Guardar imagen del resource grid
-        verbose: Mostrar información detallada del procesamiento
-        show_axes: Mostrar ejes y etiquetas en las imágenes
+        mat_file: Path to .mat file
+        scs: Subcarrier spacing in kHz (If None, uses config.yaml)
+        gscn: Channel GSCN (If None, uses config.yaml)
+        lmax: Number of SSB bursts
+        output_folder: Folder to save results (None = don't save)
+        save_plot: Save resource grid image
+        verbose: Display detailed processing information
+        show_axes: Show axes and labels in images
     
     Returns:
-        Diccionario con resultados o None si falla
+        Dictionary with results or None if it fails
     """
     # Cargar configuración
     config = get_config()
@@ -235,44 +235,44 @@ def demodulate_file(mat_file: str,
     
     if verbose:
         print("="*70)
-        print(f"Demodulando: {Path(mat_file).name}")
+        print(f"Demodulating: {Path(mat_file).name}")
         print("="*70)
     
     try:
-        # Cargar waveform
+        # Load waveform
         waveform = load_mat_file(mat_file)
         if verbose:
-            print(f"✓ Waveform cargado: {len(waveform)} muestras")
+            print(f"✓ Waveform loaded: {len(waveform)} samples")
         
-        # Demodular (n_symbols_display se toma de config si no se especifica)
+        # Demodulate (n_symbols_display taken from config if not specified)
         results = demodulate_ssb(waveform, scs=scs, lmax=lmax, 
                                 n_symbols_display=None, verbose=verbose)
         
-        # Añadir metadatos
+        # Add metadata
         results['scs'] = scs
         results['sample_rate'] = 19.5e6
         results['gscn'] = gscn
         results['filename'] = Path(mat_file).name
         
-        # Imprimir resultados
+        # Print results
         if verbose:
             print("\n" + "="*70)
-            print("RESULTADOS")
+            print("RESULTS")
             print("="*70)
             print(f"Cell ID: {results['cell_id']}")
             print(f"  NID1: {results['nid1']}")
             print(f"  NID2: {results['nid2']}")
             print(f"Strongest SSB: {results['strongest_ssb']}")
-            print(f"Potencia: {results['power_db']:.1f} dB")
+            print(f"Power: {results['power_db']:.1f} dB")
             print(f"SNR: {results['snr_db']:.1f} dB")
             print(f"Freq offset: {results['freq_offset']/1e3:.3f} kHz")
-            print(f"Timing offset: {results['timing_offset']} muestras")
+            print(f"Timing offset: {results['timing_offset']} samples")
             print("="*70)
         else:
-            # Modo silencioso: solo una línea por archivo
+            # Silent mode: only one line per file
             print(f"✓ {Path(mat_file).name}: Cell ID={results['cell_id']}, SNR={results['snr_db']:.1f} dB")
         
-        # Guardar resultados si se especifica carpeta
+        # Save results if folder is specified
         if output_folder is not None:
             file_name = Path(mat_file).stem
             
@@ -291,7 +291,7 @@ def demodulate_file(mat_file: str,
                 from visualization import save_demodulation_csv
                 save_demodulation_csv(results, mat_file, output_folder, f'{file_name}_data')
             
-            # Solo guardar log individual en modo verbose
+            # Only save individual log in verbose mode
             if verbose:
                 save_demodulation_log(results, mat_file, output_folder, f'{file_name}_info')
         
@@ -303,14 +303,14 @@ def demodulate_file(mat_file: str,
             print(f"\n✗ ERROR: {error_msg}")
             import traceback
             traceback.print_exc()
-            # En modo verbose, guardar log de error individual
+            # In verbose mode, save individual error log
             if output_folder is not None:
                 file_name = Path(mat_file).stem
                 save_error_log(e, mat_file, output_folder, f'{file_name}_ERROR')
         else:
             print(f"✗ {Path(mat_file).name}: ERROR - {error_msg[:80]}")
         
-        # Retornar dict con error para que se registre en el log general
+        # Return dict with error so it gets logged in the general log
         return {'error': error_msg, 'filename': Path(mat_file).name}
 
 
@@ -326,22 +326,22 @@ def demodulate_folder(folder_path: str,
                      show_axes: bool = False,
                      num_threads: int = 4) -> Dict[str, Any]:
     """
-    Demodula todos los archivos .mat en una carpeta.
+    Demodulates all .mat files in a folder.
     
     Args:
-        folder_path: Ruta a la carpeta con archivos .mat
-        scs: Subcarrier spacing en kHz (Si None, usa config.yaml)
-        gscn: GSCN del canal (Si None, usa config.yaml)
-        lmax: Número de SSB bursts
-        output_folder: Carpeta para guardar resultados
-        pattern: Patrón de archivos a procesar
-        verbose: Mostrar información detallada del procesamiento
-        show_axes: Mostrar ejes y etiquetas en las imágenes
+        folder_path: Path to folder with .mat files
+        scs: Subcarrier spacing in kHz (If None, uses config.yaml)
+        gscn: Channel GSCN (If None, uses config.yaml)
+        lmax: Number of SSB bursts
+        output_folder: Folder to save results
+        pattern: File pattern to process
+        verbose: Display detailed processing information
+        show_axes: Show axes and labels in images
     
     Returns:
-        Diccionario con estadísticas y resultados
+        Dictionary with statistics and results
     """
-    # Cargar configuración
+    # Load configuration
     config = get_config()
     if scs is None:
         scs = config.scs
@@ -352,26 +352,26 @@ def demodulate_folder(folder_path: str,
     mat_files = sorted(folder.glob(pattern))
     
     if verbose:
-        print(f"Encontrados {len(mat_files)} archivos {pattern} en {folder_path}")
+        print(f"Found {len(mat_files)} {pattern} files in {folder_path}")
     else:
-        print(f"\nProcesando {len(mat_files)} archivos...")
+        print(f"\nProcessing {len(mat_files)} files...")
     
-    # Inicializar log de procesamiento
+    # Initialize processing log
     log_file = None
     if output_folder is not None:
         log_file = init_processing_log(output_folder, len(mat_files))
     
     successful = 0
     failed = 0
-    first_success = True  # Para escribir la cabecera de éxitos solo una vez
-    first_error = True  # Para escribir la cabecera de errores solo una vez
+    first_success = True  # To write success header only once
+    first_error = True  # To write error header only once
     
-    # Lock para escritura thread-safe en consola y logs
+    # Lock for thread-safe writing to console and logs
     print_lock = Lock()
     log_lock = Lock()
     
     def process_single_file(mat_file):
-        """Función auxiliar para procesar un archivo en un thread."""
+        """Helper function to process a file in a thread."""
         result = demodulate_file(
             str(mat_file),
             scs=scs,
@@ -385,20 +385,20 @@ def demodulate_folder(folder_path: str,
         )
         return mat_file, result
     
-    # Procesamiento paralelo con ThreadPoolExecutor
+    # Parallel processing with ThreadPoolExecutor
     if num_threads > 1:
         with ThreadPoolExecutor(max_workers=num_threads) as executor:
-            # Enviar todos los trabajos
+            # Submit all jobs
             futures = {executor.submit(process_single_file, mat_file): mat_file 
                       for mat_file in mat_files}
             
-            # Procesar resultados a medida que se completan
+            # Process results as they complete
             for future in as_completed(futures):
                 mat_file, result = future.result()
                 
                 with log_lock:
                     if result is not None:
-                        # Verificar si es un resultado exitoso o un error
+                        # Check if it's a successful result or an error
                         if 'error' in result:
                             failed += 1
                             if log_file is not None:
@@ -410,7 +410,7 @@ def demodulate_folder(folder_path: str,
                                 append_success_to_log(log_file, result, first_success)
                                 first_success = False
                     else:
-                        # Caso legacy por si acaso (no debería ocurrir)
+                        # Legacy case just in case (shouldn't occur)
                         failed += 1
                         if log_file is not None:
                             append_error_to_log(log_file, mat_file.name, 'Error desconocido', first_error)
@@ -418,9 +418,9 @@ def demodulate_folder(folder_path: str,
                 
                 if verbose:
                     with print_lock:
-                        print()  # Línea en blanco entre archivos solo en modo verbose
+                        print()  # Blank line between files only in verbose mode
     else:
-        # Procesamiento secuencial (1 thread)
+        # Sequential processing (1 thread)
         for mat_file in mat_files:
             result = demodulate_file(
                 str(mat_file),
@@ -435,7 +435,7 @@ def demodulate_folder(folder_path: str,
             )
             
             if result is not None:
-                # Verificar si es un resultado exitoso o un error
+                # Check if it's a successful result or an error
                 if 'error' in result:
                     failed += 1
                     if log_file is not None:
@@ -447,23 +447,23 @@ def demodulate_folder(folder_path: str,
                         append_success_to_log(log_file, result, first_success)
                         first_success = False
             else:
-                # Caso legacy por si acaso (no debería ocurrir)
+                # Legacy case just in case (shouldn't occur)
                 failed += 1
                 if log_file is not None:
-                    append_error_to_log(log_file, mat_file.name, 'Error desconocido', first_error)
+                    append_error_to_log(log_file, mat_file.name, 'Unknown error', first_error)
                     first_error = False
             
             if verbose:
-                print()  # Línea en blanco entre archivos solo en modo verbose
+                print()  # Blank line between files only in verbose mode
     
     print(f"\n{'='*70}")
-    print(f"Procesamiento completado: {successful} exitosos, {failed} fallidos")
+    print(f"Processing completed: {successful} successful, {failed} failed")
     print("="*70)
     
-    # Finalizar log de procesamiento
+    # Finalize processing log
     if log_file is not None:
         finalize_processing_log(log_file, successful, failed)
-        print(f"✓ Log general guardado: {log_file}")
+        print(f"✓ General log saved: {log_file}")
     
     return {
         'successful': successful,
