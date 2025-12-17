@@ -7,6 +7,9 @@ Allows processing individual files or complete folders.
 import sys
 import argparse
 from pathlib import Path
+import cProfile
+import pstats
+import io
 
 from nr_demodulator import demodulate_file, demodulate_folder
 from config_loader import get_config
@@ -95,6 +98,19 @@ def main():
         help='Export format: images (resource grids), csv (demodulated data), or both (default: images)'
     )
     
+    parser.add_argument(
+        '--profile',
+        action='store_true',
+        help='Enable profiling to measure execution times'
+    )
+    
+    parser.add_argument(
+        '--profile-output',
+        type=str,
+        default=None,
+        help='Save profiling result to file (default: display in console)'
+    )
+    
     args = parser.parse_args()
     
     input_path = Path(args.input)
@@ -103,6 +119,46 @@ def main():
         print(f"✗ Error: {args.input} does not exist")
         sys.exit(1)
     
+    # Function to process with or without profiling
+    def process():
+        return _process_input(input_path, args)
+    
+    # Execute with profiling if requested
+    if args.profile:
+        profiler = cProfile.Profile()
+        profiler.enable()
+        exit_code = process()
+        profiler.disable()
+        
+        # Display statistics - Top by cumulative time
+        print("\n" + "="*80)
+        print("PROFILING RESULTS - Top 30 functions by cumulative time")
+        print("="*80)
+        ps = pstats.Stats(profiler)
+        ps.sort_stats('cumulative')
+        ps.print_stats(30)
+        
+        # Top by own time
+        print("\n" + "="*80)
+        print("PROFILING RESULTS - Top 20 functions by own time")
+        print("="*80)
+        ps.sort_stats('time')
+        ps.print_stats(20)
+        
+        # Save to file if specified
+        if args.profile_output:
+            profiler.dump_stats(args.profile_output)
+            print(f"\n✓ Profiling saved to: {args.profile_output}")
+            print(f"  Analyze with: python -m pstats {args.profile_output}")
+        
+        sys.exit(exit_code)
+    else:
+        exit_code = process()
+        sys.exit(exit_code)
+
+
+def _process_input(input_path, args):
+    """Processes the input (file or folder) without profiling."""
     # Determine whether to save images or CSV based on --export
     save_plot = (args.export in ['images', 'both']) and not args.no_plot
     save_csv = (args.export in ['csv', 'both'])
@@ -124,10 +180,10 @@ def main():
         if result:
             print(f"\n✓ Processing completed successfully")
             print(f"✓ Results saved in: {args.output}/")
-            sys.exit(0)
+            return 0
         else:
             print(f"\n✗ Processing failed")
-            sys.exit(1)
+            return 1
     
     elif input_path.is_dir():
         summary = demodulate_folder(
@@ -146,14 +202,14 @@ def main():
         
         if summary['successful'] > 0:
             print(f"\n✓ Results saved in: {args.output}/")
-            sys.exit(0 if summary['failed'] == 0 else 2)
+            return 0 if summary['failed'] == 0 else 2
         else:
             print(f"\n✗ All files failed")
-            sys.exit(1)
+            return 1
     
     else:
         print(f"✗ Error: {args.input} is not a valid file or folder")
-        sys.exit(1)
+        return 1
 
 
 if __name__ == '__main__':

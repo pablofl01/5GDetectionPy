@@ -239,6 +239,8 @@ All scripts use `config.yaml` by default. CLI arguments override these values.
 | `--verbose` | Detailed mode with individual logs | False |
 | `--show-axes` | Images with axes and labels | False |
 | `--no-plot` | Don't save images (deprecated, use `--export csv`) | False |
+| `--profile` | Enable profiling to measure execution times | False |
+| `--profile-output` | Save profiling result to file | None |
 
 ### captura_simple.py
 
@@ -251,6 +253,43 @@ All scripts use `config.yaml` by default. CLI arguments override these values.
 | `--gain` | Receiver gain (dB) | config.yaml (50) |
 | `--duration` | Capture duration (s) | 0.02 |
 | `--list-devices` | List USRP devices | - |
+
+## Profiling and Performance Measurement
+
+To analyze performance and execution times:
+
+### Profiling with .mat files
+
+```bash
+# Basic profiling (display in console)
+python demodulate_cli.py file.mat -o results --profile
+
+# Save profiling to file
+python demodulate_cli.py file.mat -o results --profile --profile-output profile.stats
+
+# Analyze profiling file
+python -m pstats profile.stats
+> sort cumulative
+> stats 20
+```
+
+### Profiling with folders
+
+```bash
+# Profile folder processing with multiple threads
+python demodulate_cli.py folder/ -o results --profile --threads 8
+
+# Profile with specific export format
+python demodulate_cli.py folder/ -o results --profile --export both
+```
+
+**Measured stages**:
+1. Frequency correction (PSS correlation)
+2. Timing offset estimation
+3. OFDM demodulation (SSB)
+4. Cell ID detection (SSS correlation)
+5. Complete OFDM demodulation
+6. Strongest SSB detection
 
 ## Troubleshooting
 
