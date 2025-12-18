@@ -1,36 +1,39 @@
 #!/usr/bin/env python3
 """
-Interfaz de línea de comandos para demodulación 5G NR.
-Permite procesar archivos individuales o carpetas completas.
+Command line interface for 5G NR demodulation.
+Allows processing individual files or complete folders.
 """
 
 import sys
 import argparse
 from pathlib import Path
+import cProfile
+import pstats
+import io
 
 from nr_demodulator import demodulate_file, demodulate_folder
 from config_loader import get_config
 
 
 def main():
-    # Cargar configuración para defaults
+    # Load configuration for defaults
     config = get_config()
     
     parser = argparse.ArgumentParser(
-        description='Demodulador 5G NR - Procesa archivos .mat individuales o carpetas completas'
+        description='5G NR Demodulator - Processes individual .mat files or complete folders'
     )
     
     parser.add_argument(
         'input',
         type=str,
-        help='Archivo .mat o carpeta con archivos .mat'
+        help='.mat file or folder with .mat files'
     )
     
     parser.add_argument(
         '-o', '--output',
         type=str,
         default='demodulation_results',
-        help='Carpeta de salida para resultados (default: demodulation_results)'
+        help='Output folder for results (default: demodulation_results)'
     )
     
     parser.add_argument(
@@ -38,46 +41,74 @@ def main():
         type=int,
         default=None,
         choices=[15, 30],
-        help=f'Subcarrier spacing en kHz (default: {config.scs} desde config.yaml)'
+        help=f'Subcarrier spacing in kHz (default: {config.scs} from config.yaml)'
     )
     
     parser.add_argument(
         '--gscn',
         type=int,
         default=None,
-        help=f'GSCN del canal (default: {config.gscn} desde config.yaml)'
+        help=f'Channel GSCN (default: {config.gscn} from config.yaml)'
     )
     
     parser.add_argument(
         '--lmax',
         type=int,
         default=8,
-        help='Número de SSB bursts (default: 8)'
+        help='Number of SSB bursts (default: 8)'
     )
     
     parser.add_argument(
         '--pattern',
         type=str,
         default='*.mat',
-        help='Patrón de archivos para carpetas (default: *.mat)'
+        help='File pattern for folders (default: *.mat)'
     )
     
     parser.add_argument(
         '--no-plot',
         action='store_true',
-        help='No guardar imágenes de resource grids'
+        help="Don't save resource grid images"
     )
     
     parser.add_argument(
         '--verbose',
         action='store_true',
-        help='Mostrar información detallada del procesamiento (por defecto modo silencioso)'
+        help='Display detailed processing information (default: silent mode)'
     )
     
     parser.add_argument(
         '--show-axes',
         action='store_true',
-        help='Mostrar ejes y etiquetas en las imágenes (por defecto sin ejes)'
+        help='Show axes and labels in images (default: no axes)'
+    )
+    
+    parser.add_argument(
+        '--threads',
+        type=int,
+        default=4,
+        help='Number of threads for parallel processing (default: 4)'
+    )
+    
+    parser.add_argument(
+        '--export',
+        type=str,
+        default='images',
+        choices=['images', 'csv', 'both'],
+        help='Export format: images (resource grids), csv (demodulated data), or both (default: images)'
+    )
+    
+    parser.add_argument(
+        '--profile',
+        action='store_true',
+        help='Enable profiling to measure execution times'
+    )
+    
+    parser.add_argument(
+        '--profile-output',
+        type=str,
+        default=None,
+        help='Save profiling result to file (default: display in console)'
     )
     
     args = parser.parse_args()
@@ -85,10 +116,54 @@ def main():
     input_path = Path(args.input)
     
     if not input_path.exists():
-        print(f"✗ Error: No existe {args.input}")
+        print(f"✗ Error: {args.input} does not exist")
         sys.exit(1)
     
-    # Procesar archivo o carpeta
+    # Function to process with or without profiling
+    def process():
+        return _process_input(input_path, args)
+    
+    # Execute with profiling if requested
+    if args.profile:
+        profiler = cProfile.Profile()
+        profiler.enable()
+        exit_code = process()
+        profiler.disable()
+        
+        # Display statistics - Top by cumulative time
+        print("\n" + "="*80)
+        print("PROFILING RESULTS - Top 30 functions by cumulative time")
+        print("="*80)
+        ps = pstats.Stats(profiler)
+        ps.sort_stats('cumulative')
+        ps.print_stats(30)
+        
+        # Top by own time
+        print("\n" + "="*80)
+        print("PROFILING RESULTS - Top 20 functions by own time")
+        print("="*80)
+        ps.sort_stats('time')
+        ps.print_stats(20)
+        
+        # Save to file if specified
+        if args.profile_output:
+            profiler.dump_stats(args.profile_output)
+            print(f"\n✓ Profiling saved to: {args.profile_output}")
+            print(f"  Analyze with: python -m pstats {args.profile_output}")
+        
+        sys.exit(exit_code)
+    else:
+        exit_code = process()
+        sys.exit(exit_code)
+
+
+def _process_input(input_path, args):
+    """Processes the input (file or folder) without profiling."""
+    # Determine whether to save images or CSV based on --export
+    save_plot = (args.export in ['images', 'both']) and not args.no_plot
+    save_csv = (args.export in ['csv', 'both'])
+    
+    # Process file or folder
     if input_path.is_file():
         result = demodulate_file(
             str(input_path),
@@ -96,18 +171,19 @@ def main():
             gscn=args.gscn,
             lmax=args.lmax,
             output_folder=args.output,
-            save_plot=not args.no_plot,
+            save_plot=save_plot,
+            save_csv=save_csv,
             verbose=args.verbose,
             show_axes=args.show_axes
         )
         
         if result:
-            print(f"\n✓ Procesamiento completado exitosamente")
-            print(f"✓ Resultados guardados en: {args.output}/")
-            sys.exit(0)
+            print(f"\n✓ Processing completed successfully")
+            print(f"✓ Results saved in: {args.output}/")
+            return 0
         else:
-            print(f"\n✗ Procesamiento falló")
-            sys.exit(1)
+            print(f"\n✗ Processing failed")
+            return 1
     
     elif input_path.is_dir():
         summary = demodulate_folder(
@@ -117,20 +193,23 @@ def main():
             lmax=args.lmax,
             output_folder=args.output,
             pattern=args.pattern,
+            save_plot=save_plot,
+            save_csv=save_csv,
             verbose=args.verbose,
-            show_axes=args.show_axes
+            show_axes=args.show_axes,
+            num_threads=args.threads
         )
         
         if summary['successful'] > 0:
-            print(f"\n✓ Resultados guardados en: {args.output}/")
-            sys.exit(0 if summary['failed'] == 0 else 2)
+            print(f"\n✓ Results saved in: {args.output}/")
+            return 0 if summary['failed'] == 0 else 2
         else:
-            print(f"\n✗ Todos los archivos fallaron")
-            sys.exit(1)
+            print(f"\n✗ All files failed")
+            return 1
     
     else:
-        print(f"✗ Error: {args.input} no es un archivo o carpeta válido")
-        sys.exit(1)
+        print(f"✗ Error: {args.input} is not a valid file or folder")
+        return 1
 
 
 if __name__ == '__main__':

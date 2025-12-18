@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Módulo de estimación de timing para señales 5G NR.
+Timing estimation module for 5G NR signals.
 """
 
 import numpy as np
@@ -13,26 +13,26 @@ from py3gpp.nrTimingEstimate import nrTimingEstimate
 def estimate_timing_offset(waveform: np.ndarray, nid2: int, scs: int, 
                            sample_rate: float, verbose: bool = False) -> int:
     """
-    Estimación de timing offset usando nrTimingEstimate.
+    Timing offset estimation using nrTimingEstimate.
     
     Args:
-        waveform: Señal IQ con corrección de frecuencia aplicada
-        nid2: PSS ID detectado (0, 1 o 2)
-        scs: Subcarrier spacing en kHz
-        sample_rate: Sample rate en Hz
-        verbose: Si True, muestra información del procesamiento
+        waveform: IQ signal with frequency correction applied
+        nid2: Detected PSS ID (0, 1 or 2)
+        scs: Subcarrier spacing in kHz
+        sample_rate: Sample rate in Hz
+        verbose: If True, displays processing information
     
     Returns:
-        timing_offset: Offset en muestras desde el inicio del slot
+        timing_offset: Offset in samples from the start of the slot
     """
     if verbose:
-        print("Estimación de timing offset...")
+        print("Timing offset estimation...")
     
     nrb_ssb = 20
     pss_indices = nrPSSIndices()
     pss_seq = nrPSS(nid2)
     
-    # Crear refGrid con PSS en el símbolo 2 (0-indexed: símbolo 1)
+    # Create refGrid with PSS in symbol 2 (0-indexed: symbol 1)
     ref_grid = np.zeros((nrb_ssb * 12, 2), dtype=complex)
     ref_grid[pss_indices.astype(int), 1] = pss_seq
     
@@ -46,6 +46,6 @@ def estimate_timing_offset(waveform: np.ndarray, nid2: int, scs: int,
     )
     
     if verbose:
-        print(f"  Timing offset: {timing_offset} muestras")
+        print(f"  Timing offset: {timing_offset} samples")
     
     return timing_offset

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Módulo de detección de Cell ID para señales 5G NR.
+Cell ID detection module for 5G NR signals.
 """
 
 import numpy as np
@@ -15,19 +15,19 @@ from py3gpp.nrPBCHDMRSIndices import nrPBCHDMRSIndices
 
 def detect_cell_id(ssb_grid: np.ndarray, nid2: int, verbose: bool = False) -> Tuple[int, float]:
     """
-    Detecta el Cell ID usando SSS.
+    Detects the Cell ID using SSS.
     
     Args:
-        ssb_grid: Resource grid del SSB (240 subportadoras × 4 símbolos)
-        nid2: PSS ID detectado (0, 1 o 2)
-        verbose: Si True, muestra información del procesamiento
+        ssb_grid: SSB resource grid (240 subcarriers × 4 symbols)
+        nid2: Detected PSS ID (0, 1 or 2)
+        verbose: If True, displays processing information
     
     Returns:
         nid1: Physical cell ID group (0-335)
-        max_corr: Valor de correlación máxima
+        max_corr: Maximum correlation value
     """
     if verbose:
-        print("Detección de Cell ID (SSS)...")
+        print("Cell ID detection (SSS)...")
     
     sss_indices = nrSSSIndices().astype(int)
     sss_rx = nrExtractResources(sss_indices, ssb_grid)
@@ -43,9 +43,9 @@ def detect_cell_id(ssb_grid: np.ndarray, nid2: int, verbose: bool = False) -> Tu
     max_corr = correlations[best_nid1]
     
     if verbose:
-        print(f"  NID1 detectado: {best_nid1}")
+        print(f"  Detected NID1: {best_nid1}")
         print(f"  Cell ID: {3 * best_nid1 + nid2}")
-        print(f"  Correlación: {max_corr:.2f}")
+        print(f"  Correlation: {max_corr:.2f}")
     
     return best_nid1, max_corr
 
@@ -53,22 +53,22 @@ def detect_cell_id(ssb_grid: np.ndarray, nid2: int, verbose: bool = False) -> Tu
 def detect_strongest_ssb(ssb_grids: np.ndarray, nid2: int, nid1: int, 
                          lmax: int = 8, verbose: bool = False) -> Tuple[int, float, float]:
     """
-    Detecta el SSB más fuerte entre los Lmax candidatos.
+    Detects the strongest SSB among Lmax candidates.
     
     Args:
-        ssb_grids: Array de grids SSB (240 × 4 × Lmax)
+        ssb_grids: Array of SSB grids (240 × 4 × Lmax)
         nid2: PSS ID
         nid1: Physical cell ID group
-        lmax: Número de SSB bursts a evaluar
-        verbose: Si True, muestra información del procesamiento
+        lmax: Number of SSB bursts to evaluate
+        verbose: If True, displays processing information
     
     Returns:
-        strongest_ssb: Índice del SSB más fuerte (0-7)
-        power_db: Potencia en dB
-        snr_db: SNR estimado en dB
+        strongest_ssb: Index of the strongest SSB (0-7)
+        power_db: Power in dB
+        snr_db: Estimated SNR in dB
     """
     if verbose:
-        print(f"Detección de SSB más fuerte (Lmax={lmax})...")
+        print(f"Strongest SSB detection (Lmax={lmax})...")
     
     cell_id = 3 * nid1 + nid2
     sss_indices = nrSSSIndices()
@@ -80,7 +80,7 @@ def detect_strongest_ssb(ssb_grids: np.ndarray, nid2: int, nid1: int,
     for i_ssb in range(lmax):
         grid = ssb_grids[:, :, i_ssb]
         
-        # Potencia del SSS
+        # SSS power
         sss_rx = nrExtractResources(sss_indices, grid)
         powers[i_ssb] = np.mean(np.abs(sss_rx)**2)
         
@@ -104,8 +104,8 @@ def detect_strongest_ssb(ssb_grids: np.ndarray, nid2: int, nid1: int,
     snr_db = 10 * np.log10(snrs[strongest_ssb] + 1e-12)
     
     if verbose:
-        print(f"  SSB más fuerte: {strongest_ssb}")
-        print(f"  Potencia: {power_db:.1f} dB")
+        print(f"  Strongest SSB: {strongest_ssb}")
+        print(f"  Power: {power_db:.1f} dB")
         print(f"  SNR: {snr_db:.1f} dB")
     
     return strongest_ssb, power_db, snr_db
